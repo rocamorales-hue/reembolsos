@@ -2,191 +2,263 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión de Reembolsos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Librería html2canvas para convertir HTML a Imagen PNG -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control de Reembolsos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- html2canvas para generación de reporte en imagen -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
+            --bg-app: #f1f5f9;
+            --surface: #ffffff;
             --primary: #2563eb;
-            --primary-hover: #1d4ed8;
+            --primary-active: #1d4ed8;
             --success: #10b981;
-            --success-hover: #059669;
+            --success-light: #ecfdf5;
             --warning: #f59e0b;
+            --warning-light: #fffbeb;
             --danger: #ef4444;
             --text-dark: #0f172a;
             --text-muted: #64748b;
             --border: #e2e8f0;
-            --radius: 12px;
-            --shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.02);
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+            --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: var(--text-dark); padding: 30px 15px; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; padding: 10px; background-color: var(--bg); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-app); color: var(--text-dark); padding-bottom: 90px; }
 
-        /* Header & Dashboard Stats */
-        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-dark); }
-        .header-actions { display: flex; gap: 10px; }
+        /* Container Principal */
+        .mobile-shell { width: 100%; max-width: 500px; margin: 0 auto; padding: 16px; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; width: 100%; }
-        .stat-card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
-        .stat-card .label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-card .value { font-size: 1.5rem; font-weight: 700; margin-top: 8px; }
+        /* App Header */
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 4px 0; }
+        .app-header h1 { font-size: 1.35rem; font-weight: 800; color: var(--text-dark); letter-spacing: -0.5px; }
+        .app-header p { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+        
+        .btn-icon-capture {
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 8px 12px; border-radius: var(--radius-md); font-size: 0.8rem;
+            font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 6px;
+            box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.1s;
+        }
+        .btn-icon-capture:active { transform: scale(0.96); }
+
+        /* Stats Slider / Grid */
+        .stats-container { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; margin-bottom: 16px; -webkit-overflow-scrolling: touch; }
+        .stats-container::-webkit-scrollbar { display: none; }
+        
+        .stat-card {
+            flex: 0 0 75%; scroll-snap-align: start; background: var(--surface);
+            padding: 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center;
+        }
+        @media (min-width: 480px) { .stat-card { flex: 1; } }
+        
+        .stat-card .label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
         .val-pending { color: var(--warning); }
         .val-success { color: var(--success); }
         .val-total { color: var(--primary); }
 
-        /* Actions Grid */
-        .grid-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        @media (max-width: 768px) { .grid-actions { grid-template-columns: 1fr; } }
+        /* Navigation Tabs (Mobile Bottom Bar) */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+            padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            background: none; border: none; color: var(--text-muted); font-size: 0.72rem;
+            font-weight: 600; width: 33%; cursor: pointer; transition: color 0.2s;
+        }
+        .nav-item .icon { font-size: 1.25rem; }
+        .nav-item.active { color: var(--primary); font-weight: 800; }
+
+        /* Section View Panels */
+        .tab-panel { display: none; animation: fadeIn 0.25s ease-in-out; }
+        .tab-panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Form Card UI */
+        .form-card {
+            background: var(--surface); border-radius: var(--radius-lg); padding: 20px;
+            box-shadow: var(--shadow-md); border: 1px solid var(--border); margin-bottom: 20px;
+        }
+        .form-card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
         
-        .card { background: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
-        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 18px; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
+        .field-group { margin-bottom: 14px; }
+        .field-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+        
+        /* Large Touch Inputs */
+        input, textarea {
+            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md);
+            font-size: 1rem; background: #f8fafc; transition: all 0.2s; -webkit-appearance: none;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(37,99,235,0.12); }
+        input[readonly] { background: #e2e8f0; font-weight: 700; color: var(--text-dark); }
 
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-        input, textarea { width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #f8fafc; transition: all 0.2s; }
-        input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        input[readonly] { background: #e2e8f0; cursor: not-allowed; font-weight: 600; color: var(--text-dark); }
-
-        button { padding: 12px 18px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-full { width: 100%; }
+        .btn-action {
+            width: 100%; padding: 16px; border: none; border-radius: var(--radius-md);
+            font-size: 1rem; font-weight: 800; cursor: pointer; transition: background 0.2s, transform 0.1s;
+            display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn-action:active { transform: scale(0.98); }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success); color: white; }
-        .btn-success:hover { background: var(--success-hover); }
-        .btn-secondary { background: #475569; color: white; }
-        .btn-secondary:hover { background: #334155; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .feedback-toast {
+            margin-top: 12px; padding: 12px; border-radius: var(--radius-md); font-size: 0.85rem;
+            font-weight: 700; text-align: center; display: none;
+        }
+        .toast-success { background: var(--success-light); color: #047857; display: block; }
+        .toast-error { background: #fef2f2; color: #b91c1c; display: block; }
 
-        .feedback { margin-top: 12px; font-size: 0.85rem; font-weight: 600; text-align: center; border-radius: 6px; padding: 8px; display: none; }
-        .fb-success { background: #dcfce7; color: #15803d; display: block; }
-        .fb-error { background: #fee2e2; color: #b91c1c; display: block; }
+        /* History Cards (Mobile Card View) */
+        .history-list { display: flex; flex-direction: column; gap: 12px; }
+        .history-item {
+            background: var(--surface); padding: 16px; border-radius: var(--radius-md);
+            border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex;
+            flex-direction: column; gap: 8px; position: relative;
+        }
+        .item-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .item-concept { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); line-height: 1.3; }
+        .item-date { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+        
+        .item-amounts { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
+        .monto-orig { font-size: 0.8rem; color: var(--text-muted); }
+        .monto-pend { font-size: 1.05rem; font-weight: 800; color: var(--text-dark); }
+        
+        .item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+        .clave-tag { font-family: monospace; font-size: 0.78rem; background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+        
+        /* Badges */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+        .badge-pendiente { background: var(--warning-light); color: #b45309; }
+        .badge-abonado { background: #ffedd5; color: #c2410c; }
+        .badge-pagado { background: var(--success-light); color: #047857; }
 
-        /* Table */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        th { background: #f1f5f9; padding: 12px 16px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
-        td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--text-dark); }
-        tr:hover { background: #f8fafc; }
+        .progress-bar { background: #e2e8f0; height: 5px; border-radius: 3px; width: 100%; overflow: hidden; margin-top: 4px; }
+        .progress-fill { background: var(--success); height: 100%; }
 
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .bg-pendiente { background: #fef3c7; color: #b45309; }
-        .bg-abonado { background: #ffedd5; color: #c2410c; }
-        .bg-pagado { background: #d1fae5; color: #047857; }
-
-        .progress-bar-bg { background: #e2e8f0; height: 6px; border-radius: 3px; width: 100%; margin-top: 4px; overflow: hidden; }
-        .progress-bar-fill { background: var(--success); height: 100%; border-radius: 3px; }
-        .subtext { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px; }
+        .history-log { font-size: 0.72rem; color: var(--text-muted); background: #f8fafc; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
     </style>
 </head>
 <body>
 
-<div class="app-container" id="reportArea">
-    
-    <div class="header">
+<div class="mobile-shell" id="reportArea">
+
+    <!-- Encabezado -->
+    <div class="app-header">
         <div>
-            <h1>Control de Reembolsos</h1>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Gestión inteligente de gastos y liquidez</p>
+            <h1>Control Reembolsos</h1>
+            <p>Panel Móvil de Gastos</p>
         </div>
-        <div class="header-actions" data-html2canvas-ignore="true">
-            <button class="btn-secondary" id="btnDescargarImagen">
-                📸 Descargar Reporte (PNG)
-            </button>
+        <button class="btn-icon-capture" id="btnExportImage" data-html2canvas-ignore="true">
+            📸 Reporte
+        </button>
+    </div>
+
+    <!-- Indicadores Táctiles Carrusel -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <span class="label">Pendiente</span>
+            <span class="value val-pending" id="statPendiente">$0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Reembolsado</span>
+            <span class="value val-success" id="statPagado">$0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Total Gastos</span>
+            <span class="value val-total" id="statTotal">$0.00</span>
         </div>
     </div>
 
-    <!-- Módulo Estadísticas -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="label">Pendiente por Cobrar</div>
-            <div class="value val-pending" id="statPendiente">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Total Reembolsado</div>
-            <div class="value val-success" id="statPagado">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Total Gastos Registrados</div>
-            <div class="value val-total" id="statTotal">$0.00</div>
-        </div>
-    </div>
-
-    <!-- Módulo Formularios (Ocultos automáticamente durante la captura en imagen si es necesario, pero útiles en pantalla) -->
-    <div class="grid-actions" data-html2canvas-ignore="true">
-        <!-- Formulario Gasto -->
-        <div class="card">
-            <div class="card-title">📌 Capturar Nuevo Gasto</div>
+    <!-- Pestaña 1: Captura de Gasto -->
+    <div id="tabGasto" class="tab-panel active">
+        <div class="form-card">
+            <div class="form-card-title">📌 Capturar Nuevo Gasto</div>
             <form id="formGasto">
-                <div class="form-group">
-                    <label>Fecha</label>
+                <div class="field-group">
+                    <label>Fecha del Gasto</label>
                     <input type="date" id="fecha" required>
                 </div>
-                <div class="form-group">
-                    <label>Monto ($)</label>
-                    <input type="number" step="0.01" id="monto" placeholder="0.00" required>
+                <div class="field-group">
+                    <label>Monto Total ($)</label>
+                    <input type="number" step="0.01" id="monto" placeholder="0.00" inputmode="decimal" required>
                 </div>
-                <div class="form-group">
+                <div class="field-group">
                     <label>Concepto / Descripción</label>
-                    <textarea id="concepto" rows="2" placeholder="Ej. Combustible, insumos, etc..." required></textarea>
+                    <textarea id="concepto" rows="2" placeholder="Ej. Gasolina, insumos evento..." required></textarea>
                 </div>
-                <button type="submit" class="btn-primary btn-full" id="btnGasto">Registrar Gasto</button>
+                <button type="submit" class="btn-action btn-primary" id="btnGasto">Guardar Gasto</button>
             </form>
-            <div id="msgGasto" class="feedback"></div>
-        </div>
-
-        <!-- Formulario Reembolso / Abono -->
-        <div class="card">
-            <div class="card-title">💵 Aplicar Reembolso / Abono</div>
-            <form id="formReembolso">
-                <div class="form-group">
-                    <label>Monto Depositado ($)</label>
-                    <input type="number" step="0.01" id="monto_reembolso" placeholder="0.00" required>
-                </div>
-                <div class="form-group">
-                    <label>Siguiente Clave de Reembolso</label>
-                    <input type="text" id="siguienteClave" readonly>
-                </div>
-                <button type="submit" class="btn-success btn-full" id="btnReembolso">Procesar Pago en Cascada</button>
-            </form>
-            <div id="msgReembolso" class="feedback"></div>
+            <div id="msgGasto" class="feedback-toast"></div>
         </div>
     </div>
 
-    <!-- Historial -->
-    <div class="card">
-        <div class="card-title">📜 Historial y Estado de Gastos</div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Concepto</th>
-                        <th>Monto Orig.</th>
-                        <th>Pendiente</th>
-                        <th>Clave</th>
-                        <th>Estatus</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaBody">
-                    <tr><td colspan="6" style="text-align:center;">Cargando registros...</td></tr>
-                </tbody>
-            </table>
+    <!-- Pestaña 2: Aplicar Reembolso / Abono -->
+    <div id="tabReembolso" class="tab-panel">
+        <div class="form-card">
+            <div class="form-card-title">💵 Aplicar Reembolso / Abono</div>
+            <form id="formReembolso">
+                <div class="field-group">
+                    <label>Monto Depositado ($)</label>
+                    <input type="number" step="0.01" id="monto_reembolso" placeholder="0.00" inputmode="decimal" required>
+                </div>
+                <div class="field-group">
+                    <label>Siguiente Clave Afectada</label>
+                    <input type="text" id="siguienteClave" readonly>
+                </div>
+                <button type="submit" class="btn-action btn-success" id="btnReembolso">Aplicar Reembolso en Cascada</button>
+            </form>
+            <div id="msgReembolso" class="feedback-toast"></div>
+        </div>
+    </div>
+
+    <!-- Pestaña 3: Historial de Gastos (Optimizado Móvil) -->
+    <div id="tabHistorial" class="tab-panel">
+        <div class="form-card-title" style="margin-bottom: 12px;">📜 Historial de Registros</div>
+        <div class="history-list" id="listaHistorial">
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px;">Cargando registros...</p>
         </div>
     </div>
 
 </div>
+
+<!-- Navegación Móvil Inferior -->
+<nav class="bottom-nav" data-html2canvas-ignore="true">
+    <button class="nav-item active" onclick="switchTab('tabGasto', this)">
+        <span class="icon">➕</span>
+        <span>Gasto</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('tabReembolso', this)">
+        <span class="icon">💰</span>
+        <span>Abonar</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('tabHistorial', this)">
+        <span class="icon">📑</span>
+        <span>Historial</span>
+    </button>
+</nav>
 
 <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxoVq3QKgy369RNBLUa8sBSADRNtjWXMtp-nciPoF_ErmIdcStr1F9nNjny78ZnDi4t/exec';
 
     document.getElementById('fecha').valueAsDate = new Date();
     cargarDashboard();
+
+    // Cambiar de Pestaña Móvil
+    function switchTab(tabId, element) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        element.classList.add('active');
+    }
 
     function cargarDashboard() {
         fetch(scriptURL)
@@ -197,53 +269,62 @@
                 document.getElementById('statTotal').textContent = '$' + data.resumen.totalOriginal.toLocaleString('es-MX', {minimumFractionDigits: 2});
                 document.getElementById('siguienteClave').value = data.siguienteClave;
 
-                renderTabla(data.registros);
+                renderHistorialMovil(data.registros);
             })
             .catch(err => console.error("Error al cargar datos:", err));
     }
 
-    function renderTabla(registros) {
-        const tbody = document.getElementById('tablaBody');
-        tbody.innerHTML = '';
+    function renderHistorialMovil(registros) {
+        const contenedor = document.getElementById('listaHistorial');
+        contenedor.innerHTML = '';
 
         if (!registros || registros.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay registros actuales.</td></tr>';
+            contenedor.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 20px;">No hay registros actuales.</p>';
             return;
         }
 
         registros.slice().reverse().forEach(r => {
-            const tr = document.createElement('tr');
-            
-            let badgeClass = 'bg-pendiente';
-            if (r.status === 'Pagado') badgeClass = 'bg-pagado';
-            if (r.status === 'Abonado') badgeClass = 'bg-abonado';
+            const card = document.createElement('div');
+            card.className = 'history-item';
+
+            let badgeClass = 'badge-pendiente';
+            if (r.status === 'Pagado') badgeClass = 'badge-pagado';
+            if (r.status === 'Abonado') badgeClass = 'badge-abonado';
 
             const pagado = r.monto_original - r.monto_pendiente;
             const pct = Math.min(100, Math.max(0, (pagado / r.monto_original) * 100));
 
-            tr.innerHTML = `
-                <td><strong>${r.fecha}</strong></td>
-                <td>
-                    ${r.concepto}
-                    ${r.historial_abonos ? `<span class="subtext">ℹ️ ${r.historial_abonos}</span>` : ''}
-                </td>
-                <td>$${r.monto_original.toFixed(2)}</td>
-                <td>
-                    <strong>$${r.monto_pendiente.toFixed(2)}</strong>
-                    ${r.status === 'Abonado' ? `
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${pct}%"></div>
-                        </div>
-                    ` : ''}
-                </td>
-                <td><code>${r.clave_reembolso}</code></td>
-                <td><span class="badge ${badgeClass}">${r.status}</span></td>
+            card.innerHTML = `
+                <div class="item-top">
+                    <div>
+                        <div class="item-concept">${r.concepto}</div>
+                        <div class="item-date">📅 ${r.fecha}</div>
+                    </div>
+                    <span class="badge ${badgeClass}">${r.status}</span>
+                </div>
+                
+                <div class="item-amounts">
+                    <span class="monto-orig">Original: $${r.monto_original.toFixed(2)}</span>
+                    <span class="monto-pend">Resta: $${r.monto_pendiente.toFixed(2)}</span>
+                </div>
+                
+                ${r.status === 'Abonado' ? `
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${pct}%"></div>
+                    </div>
+                ` : ''}
+
+                <div class="item-bottom">
+                    <span class="clave-tag">${r.clave_reembolso || 'Sin Clave'}</span>
+                </div>
+
+                ${r.historial_abonos ? `<div class="history-log">ℹ️ ${r.historial_abonos}</div>` : ''}
             `;
-            tbody.appendChild(tr);
+            contenedor.appendChild(card);
         });
     }
 
-    // Registrar Gasto
+    // Guardar Gasto
     document.getElementById('formGasto').addEventListener('submit', e => {
         e.preventDefault();
         const btn = document.getElementById('btnGasto');
@@ -261,7 +342,7 @@
         })
         .then(res => res.json())
         .then(res => {
-            msg.className = 'feedback fb-success';
+            msg.className = 'feedback-toast toast-success';
             msg.textContent = res.message;
             document.getElementById('formGasto').reset();
             document.getElementById('fecha').valueAsDate = new Date();
@@ -269,13 +350,13 @@
             cargarDashboard();
         })
         .catch(() => {
-            msg.className = 'feedback fb-error';
-            msg.textContent = 'Error de conexión.';
+            msg.className = 'feedback-toast toast-error';
+            msg.textContent = 'Error al registrar el gasto.';
             btn.disabled = false;
         });
     });
 
-    // Registrar Reembolso
+    // Guardar Reembolso
     document.getElementById('formReembolso').addEventListener('submit', e => {
         e.preventDefault();
         const btn = document.getElementById('btnReembolso');
@@ -291,43 +372,47 @@
         })
         .then(res => res.json())
         .then(res => {
-            msg.className = res.result === 'success' ? 'feedback fb-success' : 'feedback fb-error';
+            msg.className = res.result === 'success' ? 'feedback-toast toast-success' : 'feedback-toast toast-error';
             msg.textContent = res.message;
             document.getElementById('formReembolso').reset();
             btn.disabled = false;
             cargarDashboard();
         })
         .catch(() => {
-            msg.className = 'feedback fb-error';
-            msg.textContent = 'Error al aplicar el abono.';
+            msg.className = 'feedback-toast toast-error';
+            msg.textContent = 'Error al procesar el abono.';
             btn.disabled = false;
         });
     });
 
-    // 📸 Función para generar la captura de imagen PNG del reporte
-    document.getElementById('btnDescargarImagen').addEventListener('click', () => {
-        const btn = document.getElementById('btnDescargarImagen');
-        btn.textContent = '⏳ Generando Reporte...';
+    // Descarga de Reporte Imagen Móvil
+    document.getElementById('btnExportImage').addEventListener('click', () => {
+        const btn = document.getElementById('btnExportImage');
+        btn.textContent = '⏳...';
         btn.disabled = true;
 
-        const reportArea = document.getElementById('reportArea');
+        // Asegurarse de mostrar el historial en la captura
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
 
-        html2canvas(reportArea, {
-            scale: 2, // Alta calidad HD
-            backgroundColor: '#f8fafc',
+        html2canvas(document.getElementById('reportArea'), {
+            scale: 2,
+            backgroundColor: '#f1f5f9',
             useCORS: true
         }).then(canvas => {
             const link = document.createElement('a');
-            const fechaHoy = new Date().toISOString().split('T')[0];
-            link.download = `Reporte_Reembolsos_${fechaHoy}.png`;
+            const fecha = new Date().toISOString().split('T')[0];
+            link.download = `Reporte_${fecha}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
 
-            btn.textContent = '📸 Descargar Reporte (PNG)';
+            btn.textContent = '📸 Reporte';
             btn.disabled = false;
+            
+            // Volver al estado normal de pestaña
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('tabGasto').classList.add('active');
         }).catch(err => {
-            console.error('Error al generar la imagen:', err);
-            btn.textContent = '📸 Descargar Reporte (PNG)';
+            btn.textContent = '📸 Reporte';
             btn.disabled = false;
         });
     });
