@@ -47,7 +47,7 @@
             </div>
             <div class="form-group">
                 <label for="concepto">Concepto:</label>
-                <textarea id="concepto" rows="2" placeholder="Ej. Gasolina, Compras de café..." required></textarea>
+                <textarea id="concepto" rows="2" placeholder="Ej. Gasolina, material, etc..." required></textarea>
             </div>
             <div class="form-group">
                 <label>Clave Asignada (Autogenerada):</label>
@@ -68,7 +68,7 @@
             </div>
             <div class="form-group">
                 <label for="clave_cobro">Clave / Folio del Depósito:</label>
-                <input type="text" id="clave_cobro" placeholder="Ej. DEP-2023-01">
+                <input type="text" id="clave_cobro" placeholder="Ej. DEP-2026-01">
             </div>
             <button type="submit" class="btn-reembolso" id="btnReembolso">Pagar Gastos Pendientes</button>
         </form>
@@ -98,8 +98,8 @@
 </div>
 
 <script>
-    // Coloca la URL desplegada de tu Google Apps Script aquí
-    const scriptURL = 'TU_URL_DE_APPS_SCRIPT_AQUI';
+    // URL de tu Google Apps Script configurada
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxoVq3QKgy369RNBLUa8sBSADRNtjWXMtp-nciPoF_ErmIdcStr1F9nNjny78ZnDi4t/exec';
 
     document.getElementById('fecha').valueAsDate = new Date();
 
@@ -128,11 +128,10 @@
         // Mostrar del más reciente al más antiguo
         registros.slice().reverse().forEach(r => {
             const tr = document.createElement('tr');
-            const fechaFormateada = new Date(r.fecha).toLocaleDateString('es-MX');
             const badgeClass = r.status === 'Pagado' ? 'badge-pagado' : 'badge-pendiente';
 
             tr.innerHTML = `
-                <td>${fechaFormateada}</td>
+                <td>${r.fecha}</td>
                 <td>${r.concepto}</td>
                 <td>$${parseFloat(r.monto).toFixed(2)}</td>
                 <td><strong>${r.clave_reembolso}</strong></td>
