@@ -3,99 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Reembolsos y Gastos</title>
-    <!-- Estilos limpios y modernos -->
+    <title>Control de Gastos y Reembolsos</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
-        h2 { color: #333; text-align: center; margin-bottom: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1000px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2 { color: #1a73e8; margin-top: 0; font-size: 1.3rem; border-bottom: 2px solid #e8eaed; padding-bottom: 10px; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #666; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #28a745; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-size: 16px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .mensaje { margin-top: 15px; text-align: center; font-weight: bold; }
+        label { display: block; margin-bottom: 5px; color: #5f6368; font-weight: 600; font-size: 0.9rem; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        button { background-color: #1a73e8; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #1557b0; }
+        .btn-reembolso { background-color: #34a853; }
+        .btn-reembolso:hover { background-color: #2d8e47; }
+        .mensaje { margin-top: 10px; font-weight: bold; font-size: 0.9rem; text-align: center; }
+        
+        /* Tabla de historial */
+        .full-width { width: 100%; max-width: 1000px; margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        th, td { padding: 12px 15px; text-align: left; font-size: 0.9rem; }
+        th { background-color: #f8f9fa; color: #3c4043; border-bottom: 2px solid #dadce0; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; display: inline-block; }
+        .badge-pendiente { background-color: #fef7e0; color: #b06000; }
+        .badge-pagado { background-color: #e6f4ea; color: #137333; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Registro de Reembolsos</h2>
-    <form id="reembolsoForm">
-        <div class="form-group">
-            <label for="fecha">Fecha:</label>
-            <input type="date" id="fecha" required>
-        </div>
-        <div class="form-group">
-            <label for="monto">Monto ($):</label>
-            <input type="number" step="0.01" id="monto" placeholder="0.00" required>
-        </div>
-        <div class="form-group">
-            <label for="concepto">Concepto:</label>
-            <textarea id="concepto" rows="3" placeholder="Descripción del gasto..." required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="clave_reembolso">Clave de Reembolso:</label>
-            <input type="text" id="clave_reembolso" placeholder="Ej. REM-001" required>
-        </div>
-        <div class="form-group">
-            <label for="status">Status:</label>
-            <select id="status">
-                <option value="Pendiente">Pendiente</option>
-                <option value="Aprobado">Aprobado</option>
-                <option value="Pagado">Pagado</option>
-            </select>
-        </div>
-        <button type="submit" id="btnEnviar">Guardar Registro</button>
-    </form>
-    <div id="mensaje" class="mensaje"></div>
+<div class="grid">
+    <!-- MÓDULO 1: Captura de Gastos -->
+    <div class="card">
+        <h2>1. Registrar Nuevo Gasto</h2>
+        <form id="gastoForm">
+            <div class="form-group">
+                <label for="fecha">Fecha:</label>
+                <input type="date" id="fecha" required>
+            </div>
+            <div class="form-group">
+                <label for="monto">Monto ($):</label>
+                <input type="number" step="0.01" id="monto" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label for="concepto">Concepto:</label>
+                <textarea id="concepto" rows="2" placeholder="Ej. Gasolina, Compras de café..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Clave Asignada (Autogenerada):</label>
+                <input type="text" id="clave_reembolso" readonly style="background-color: #e8eaed; font-weight: bold;">
+            </div>
+            <button type="submit" id="btnGasto">Guardar Gasto</button>
+        </form>
+        <div id="msgGasto" class="mensaje"></div>
+    </div>
+
+    <!-- MÓDULO 2: Cobro y Reembolso -->
+    <div class="card">
+        <h2>2. Aplicar Reembolso / Pago</h2>
+        <form id="reembolsoForm">
+            <div class="form-group">
+                <label for="monto_reembolso">Monto Depositado ($):</label>
+                <input type="number" step="0.01" id="monto_reembolso" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label for="clave_cobro">Clave / Folio del Depósito:</label>
+                <input type="text" id="clave_cobro" placeholder="Ej. DEP-2023-01">
+            </div>
+            <button type="submit" class="btn-reembolso" id="btnReembolso">Pagar Gastos Pendientes</button>
+        </form>
+        <div id="msgReembolso" class="mensaje"></div>
+    </div>
+</div>
+
+<!-- MÓDULO 3: Historial de Registros -->
+<div class="card full-width">
+    <h2>Historial de Gastos y Reembolsos</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Monto</th>
+                    <th>Clave</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tablaHistorial">
+                <tr><td colspan="5" style="text-align: center;">Cargando registros...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    // URL de tu Web App de Google Apps Script copiada en el Paso 1
+    // Coloca la URL desplegada de tu Google Apps Script aquí
     const scriptURL = 'TU_URL_DE_APPS_SCRIPT_AQUI';
 
-    const form = document.getElementById('reembolsoForm');
-    const btnEnviar = document.getElementById('btnEnviar');
-    const mensajeDiv = document.getElementById('mensaje');
-
-    // Poner la fecha actual por defecto
     document.getElementById('fecha').valueAsDate = new Date();
 
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        btnEnviar.disabled = true;
-        btnEnviar.textContent = 'Guardando...';
-        mensajeDiv.textContent = '';
+    // Cargar datos al iniciar la página
+    cargarDatos();
 
-        const datos = {
+    function cargarDatos() {
+        fetch(scriptURL)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('clave_reembolso').value = data.siguienteClave;
+                renderTabla(data.registros);
+            })
+            .catch(err => console.error("Error al cargar datos:", err));
+    }
+
+    function renderTabla(registros) {
+        const tbody = document.getElementById('tablaHistorial');
+        tbody.innerHTML = '';
+
+        if (!registros || registros.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay gastos registrados.</td></tr>';
+            return;
+        }
+
+        // Mostrar del más reciente al más antiguo
+        registros.slice().reverse().forEach(r => {
+            const tr = document.createElement('tr');
+            const fechaFormateada = new Date(r.fecha).toLocaleDateString('es-MX');
+            const badgeClass = r.status === 'Pagado' ? 'badge-pagado' : 'badge-pendiente';
+
+            tr.innerHTML = `
+                <td>${fechaFormateada}</td>
+                <td>${r.concepto}</td>
+                <td>$${parseFloat(r.monto).toFixed(2)}</td>
+                <td><strong>${r.clave_reembolso}</strong></td>
+                <td><span class="badge ${badgeClass}">${r.status}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 1. Enviar Nuevo Gasto
+    document.getElementById('gastoForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const btn = document.getElementById('btnGasto');
+        btn.disabled = true;
+
+        const payload = {
+            accion: "nuevo_gasto",
             fecha: document.getElementById('fecha').value,
             monto: document.getElementById('monto').value,
             concepto: document.getElementById('concepto').value,
-            clave_reembolso: document.getElementById('clave_reembolso').value,
-            status: document.getElementById('status').value
+            clave_reembolso: document.getElementById('clave_reembolso').value
         };
 
         fetch(scriptURL, {
             method: 'POST',
-            mode: 'no-cors', // Necesario para evitar problemas de CORS con Apps Script
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos)
+            body: JSON.stringify(payload)
         })
-        .then(() => {
-            mensajeDiv.style.color = 'green';
-            mensajeDiv.textContent = '¡Registro guardado con éxito en Google Sheets!';
-            form.reset();
-            document.getElementById('fecha').valueAsDate = new Date(); // Resetear fecha de nuevo
-            btnEnviar.disabled = false;
-            btnEnviar.textContent = 'Guardar Registro';
+        .then(res => res.json())
+        .then(res => {
+            document.getElementById('msgGasto').style.color = 'green';
+            document.getElementById('msgGasto').textContent = 'Gasto guardado con éxito.';
+            document.getElementById('gastoForm').reset();
+            document.getElementById('fecha').valueAsDate = new Date();
+            btn.disabled = false;
+            cargarDatos();
         })
-        .catch(error => {
-            mensajeDiv.style.color = 'red';
-            mensajeDiv.textContent = 'Error al guardar. Inténtalo de nuevo.';
-            console.error('Error!', error.message);
-            btnEnviar.disabled = false;
-            btnEnviar.textContent = 'Guardar Registro';
+        .catch(err => {
+            document.getElementById('msgGasto').style.color = 'red';
+            document.getElementById('msgGasto').textContent = 'Error al registrar gasto.';
+            btn.disabled = false;
+        });
+    });
+
+    // 2. Aplicar Reembolso
+    document.getElementById('reembolsoForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const btn = document.getElementById('btnReembolso');
+        btn.disabled = true;
+
+        const payload = {
+            accion: "aplicar_reembolso",
+            monto_reembolso: document.getElementById('monto_reembolso').value,
+            clave_cobro: document.getElementById('clave_cobro').value
+        };
+
+        fetch(scriptURL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+            document.getElementById('msgReembolso').style.color = 'green';
+            document.getElementById('msgReembolso').textContent = res.message;
+            document.getElementById('reembolsoForm').reset();
+            btn.disabled = false;
+            cargarDatos();
+        })
+        .catch(err => {
+            document.getElementById('msgReembolso').style.color = 'red';
+            document.getElementById('msgReembolso').textContent = 'Error al procesar el reembolso.';
+            btn.disabled = false;
         });
     });
 </script>
