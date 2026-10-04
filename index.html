@@ -12,7 +12,7 @@
         h2 { color: #1a73e8; margin-top: 0; font-size: 1.3rem; border-bottom: 2px solid #e8eaed; padding-bottom: 10px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #5f6368; font-weight: 600; font-size: 0.9rem; }
-        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
         button { background-color: #1a73e8; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #1557b0; }
         .btn-reembolso { background-color: #34a853; }
@@ -47,11 +47,7 @@
             </div>
             <div class="form-group">
                 <label for="concepto">Concepto:</label>
-                <textarea id="concepto" rows="2" placeholder="Ej. Gasolina, material, etc..." required></textarea>
-            </div>
-            <div class="form-group">
-                <label>Clave Asignada (Autogenerada):</label>
-                <input type="text" id="clave_reembolso" readonly style="background-color: #e8eaed; font-weight: bold;">
+                <textarea id="concepto" rows="3" placeholder="Descripción del gasto..." required></textarea>
             </div>
             <button type="submit" id="btnGasto">Guardar Gasto</button>
         </form>
@@ -67,8 +63,8 @@
                 <input type="number" step="0.01" id="monto_reembolso" placeholder="0.00" required>
             </div>
             <div class="form-group">
-                <label for="clave_cobro">Clave / Folio del Depósito:</label>
-                <input type="text" id="clave_cobro" placeholder="Ej. DEP-2026-01">
+                <label>Próxima Clave a Asignar:</label>
+                <input type="text" id="proxima_clave" readonly style="background-color: #e8eaed; font-weight: bold; color: #3c4043;">
             </div>
             <button type="submit" class="btn-reembolso" id="btnReembolso">Pagar Gastos Pendientes</button>
         </form>
@@ -86,7 +82,7 @@
                     <th>Fecha</th>
                     <th>Concepto</th>
                     <th>Monto</th>
-                    <th>Clave</th>
+                    <th>Clave Reembolso</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -98,19 +94,17 @@
 </div>
 
 <script>
-    // URL de tu Google Apps Script configurada
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxoVq3QKgy369RNBLUa8sBSADRNtjWXMtp-nciPoF_ErmIdcStr1F9nNjny78ZnDi4t/exec';
 
     document.getElementById('fecha').valueAsDate = new Date();
 
-    // Cargar datos al iniciar la página
     cargarDatos();
 
     function cargarDatos() {
         fetch(scriptURL)
             .then(res => res.json())
             .then(data => {
-                document.getElementById('clave_reembolso').value = data.siguienteClave;
+                document.getElementById('proxima_clave').value = data.siguienteClave;
                 renderTabla(data.registros);
             })
             .catch(err => console.error("Error al cargar datos:", err));
@@ -125,7 +119,7 @@
             return;
         }
 
-        // Mostrar del más reciente al más antiguo
+        // Mostrar los más recientes primero en la visualización
         registros.slice().reverse().forEach(r => {
             const tr = document.createElement('tr');
             const badgeClass = r.status === 'Pagado' ? 'badge-pagado' : 'badge-pendiente';
@@ -151,8 +145,7 @@
             accion: "nuevo_gasto",
             fecha: document.getElementById('fecha').value,
             monto: document.getElementById('monto').value,
-            concepto: document.getElementById('concepto').value,
-            clave_reembolso: document.getElementById('clave_reembolso').value
+            concepto: document.getElementById('concepto').value
         };
 
         fetch(scriptURL, {
@@ -162,7 +155,7 @@
         .then(res => res.json())
         .then(res => {
             document.getElementById('msgGasto').style.color = 'green';
-            document.getElementById('msgGasto').textContent = 'Gasto guardado con éxito.';
+            document.getElementById('msgGasto').textContent = 'Gasto registrado correctamente.';
             document.getElementById('gastoForm').reset();
             document.getElementById('fecha').valueAsDate = new Date();
             btn.disabled = false;
@@ -170,7 +163,7 @@
         })
         .catch(err => {
             document.getElementById('msgGasto').style.color = 'red';
-            document.getElementById('msgGasto').textContent = 'Error al registrar gasto.';
+            document.getElementById('msgGasto').textContent = 'Error al registrar el gasto.';
             btn.disabled = false;
         });
     });
@@ -183,8 +176,7 @@
 
         const payload = {
             accion: "aplicar_reembolso",
-            monto_reembolso: document.getElementById('monto_reembolso').value,
-            clave_cobro: document.getElementById('clave_cobro').value
+            monto_reembolso: document.getElementById('monto_reembolso').value
         };
 
         fetch(scriptURL, {
@@ -193,8 +185,13 @@
         })
         .then(res => res.json())
         .then(res => {
-            document.getElementById('msgReembolso').style.color = 'green';
-            document.getElementById('msgReembolso').textContent = res.message;
+            const msgDiv = document.getElementById('msgReembolso');
+            if (res.result === 'warning') {
+                msgDiv.style.color = 'orange';
+            } else {
+                msgDiv.style.color = 'green';
+            }
+            msgDiv.textContent = res.message;
             document.getElementById('reembolsoForm').reset();
             btn.disabled = false;
             cargarDatos();
