@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Reembolsos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Librería html2canvas para convertir HTML a Imagen PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --bg: #f8fafc;
@@ -24,11 +26,13 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg); color: var(--text-dark); padding: 30px 15px; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
+        .app-container { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; padding: 10px; background-color: var(--bg); }
 
         /* Header & Dashboard Stats */
         .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-dark); }
+        .header-actions { display: flex; gap: 10px; }
+
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; width: 100%; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
         .stat-card .label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -50,11 +54,14 @@
         input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         input[readonly] { background: #e2e8f0; cursor: not-allowed; font-weight: 600; color: var(--text-dark); }
 
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        button { padding: 12px 18px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-full { width: 100%; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success); color: white; }
         .btn-success:hover { background: var(--success-hover); }
+        .btn-secondary { background: #475569; color: white; }
+        .btn-secondary:hover { background: #334155; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .feedback { margin-top: 12px; font-size: 0.85rem; font-weight: 600; text-align: center; border-radius: 6px; padding: 8px; display: none; }
@@ -80,12 +87,17 @@
 </head>
 <body>
 
-<div class="app-container">
+<div class="app-container" id="reportArea">
     
     <div class="header">
         <div>
             <h1>Control de Reembolsos</h1>
             <p style="color: var(--text-muted); font-size: 0.9rem;">Gestión inteligente de gastos y liquidez</p>
+        </div>
+        <div class="header-actions" data-html2canvas-ignore="true">
+            <button class="btn-secondary" id="btnDescargarImagen">
+                📸 Descargar Reporte (PNG)
+            </button>
         </div>
     </div>
 
@@ -105,8 +117,8 @@
         </div>
     </div>
 
-    <!-- Módulo Formularios -->
-    <div class="grid-actions">
+    <!-- Módulo Formularios (Ocultos automáticamente durante la captura en imagen si es necesario, pero útiles en pantalla) -->
+    <div class="grid-actions" data-html2canvas-ignore="true">
         <!-- Formulario Gasto -->
         <div class="card">
             <div class="card-title">📌 Capturar Nuevo Gasto</div>
@@ -123,7 +135,7 @@
                     <label>Concepto / Descripción</label>
                     <textarea id="concepto" rows="2" placeholder="Ej. Combustible, insumos, etc..." required></textarea>
                 </div>
-                <button type="submit" class="btn-primary" id="btnGasto">Registrar Gasto</button>
+                <button type="submit" class="btn-primary btn-full" id="btnGasto">Registrar Gasto</button>
             </form>
             <div id="msgGasto" class="feedback"></div>
         </div>
@@ -140,7 +152,7 @@
                     <label>Siguiente Clave de Reembolso</label>
                     <input type="text" id="siguienteClave" readonly>
                 </div>
-                <button type="submit" class="btn-success" id="btnReembolso">Procesar Pago en Cascada</button>
+                <button type="submit" class="btn-success btn-full" id="btnReembolso">Procesar Pago en Cascada</button>
             </form>
             <div id="msgReembolso" class="feedback"></div>
         </div>
@@ -180,7 +192,6 @@
         fetch(scriptURL)
             .then(res => res.json())
             .then(data => {
-                // Actualizar Stats
                 document.getElementById('statPendiente').textContent = '$' + data.resumen.totalPendiente.toLocaleString('es-MX', {minimumFractionDigits: 2});
                 document.getElementById('statPagado').textContent = '$' + data.resumen.totalPagado.toLocaleString('es-MX', {minimumFractionDigits: 2});
                 document.getElementById('statTotal').textContent = '$' + data.resumen.totalOriginal.toLocaleString('es-MX', {minimumFractionDigits: 2});
@@ -207,7 +218,6 @@
             if (r.status === 'Pagado') badgeClass = 'bg-pagado';
             if (r.status === 'Abonado') badgeClass = 'bg-abonado';
 
-            // Cálculo de porcentaje pagado
             const pagado = r.monto_original - r.monto_pendiente;
             const pct = Math.min(100, Math.max(0, (pagado / r.monto_original) * 100));
 
@@ -233,7 +243,7 @@
         });
     }
 
-    // Evento Gasto
+    // Registrar Gasto
     document.getElementById('formGasto').addEventListener('submit', e => {
         e.preventDefault();
         const btn = document.getElementById('btnGasto');
@@ -265,7 +275,7 @@
         });
     });
 
-    // Evento Reembolso
+    // Registrar Reembolso
     document.getElementById('formReembolso').addEventListener('submit', e => {
         e.preventDefault();
         const btn = document.getElementById('btnReembolso');
@@ -290,6 +300,34 @@
         .catch(() => {
             msg.className = 'feedback fb-error';
             msg.textContent = 'Error al aplicar el abono.';
+            btn.disabled = false;
+        });
+    });
+
+    // 📸 Función para generar la captura de imagen PNG del reporte
+    document.getElementById('btnDescargarImagen').addEventListener('click', () => {
+        const btn = document.getElementById('btnDescargarImagen');
+        btn.textContent = '⏳ Generando Reporte...';
+        btn.disabled = true;
+
+        const reportArea = document.getElementById('reportArea');
+
+        html2canvas(reportArea, {
+            scale: 2, // Alta calidad HD
+            backgroundColor: '#f8fafc',
+            useCORS: true
+        }).then(canvas => {
+            const link = document.createElement('a');
+            const fechaHoy = new Date().toISOString().split('T')[0];
+            link.download = `Reporte_Reembolsos_${fechaHoy}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            btn.textContent = '📸 Descargar Reporte (PNG)';
+            btn.disabled = false;
+        }).catch(err => {
+            console.error('Error al generar la imagen:', err);
+            btn.textContent = '📸 Descargar Reporte (PNG)';
             btn.disabled = false;
         });
     });
