@@ -1,421 +1,214 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Control de Reembolsos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- html2canvas para generación de reporte en imagen -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        :root {
-            --bg-app: #f1f5f9;
-            --surface: #ffffff;
-            --primary: #2563eb;
-            --primary-active: #1d4ed8;
-            --success: #10b981;
-            --success-light: #ecfdf5;
-            --warning: #f59e0b;
-            --warning-light: #fffbeb;
-            --danger: #ef4444;
-            --text-dark: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --radius-lg: 18px;
-            --radius-md: 12px;
-            --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
-            --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-        }
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control de Gastos - Quinta Bugambilia</title>
+  
+  <!-- CSS de Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- SweetAlert2 para notificaciones -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-app); color: var(--text-dark); padding-bottom: 90px; }
-
-        /* Container Principal */
-        .mobile-shell { width: 100%; max-width: 500px; margin: 0 auto; padding: 16px; }
-
-        /* App Header */
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 4px 0; }
-        .app-header h1 { font-size: 1.35rem; font-weight: 800; color: var(--text-dark); letter-spacing: -0.5px; }
-        .app-header p { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
-        
-        .btn-icon-capture {
-            background: var(--surface); border: 1px solid var(--border);
-            padding: 8px 12px; border-radius: var(--radius-md); font-size: 0.8rem;
-            font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 6px;
-            box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.1s;
-        }
-        .btn-icon-capture:active { transform: scale(0.96); }
-
-        /* Stats Slider / Grid */
-        .stats-container { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; margin-bottom: 16px; -webkit-overflow-scrolling: touch; }
-        .stats-container::-webkit-scrollbar { display: none; }
-        
-        .stat-card {
-            flex: 0 0 75%; scroll-snap-align: start; background: var(--surface);
-            padding: 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center;
-        }
-        @media (min-width: 480px) { .stat-card { flex: 1; } }
-        
-        .stat-card .label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
-        .stat-card .value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
-        .val-pending { color: var(--warning); }
-        .val-success { color: var(--success); }
-        .val-total { color: var(--primary); }
-
-        /* Navigation Tabs (Mobile Bottom Bar) */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
-            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
-            padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 1000;
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            background: none; border: none; color: var(--text-muted); font-size: 0.72rem;
-            font-weight: 600; width: 33%; cursor: pointer; transition: color 0.2s;
-        }
-        .nav-item .icon { font-size: 1.25rem; }
-        .nav-item.active { color: var(--primary); font-weight: 800; }
-
-        /* Section View Panels */
-        .tab-panel { display: none; animation: fadeIn 0.25s ease-in-out; }
-        .tab-panel.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Form Card UI */
-        .form-card {
-            background: var(--surface); border-radius: var(--radius-lg); padding: 20px;
-            box-shadow: var(--shadow-md); border: 1px solid var(--border); margin-bottom: 20px;
-        }
-        .form-card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
-        
-        .field-group { margin-bottom: 14px; }
-        .field-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
-        
-        /* Large Touch Inputs */
-        input, textarea {
-            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md);
-            font-size: 1rem; background: #f8fafc; transition: all 0.2s; -webkit-appearance: none;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(37,99,235,0.12); }
-        input[readonly] { background: #e2e8f0; font-weight: 700; color: var(--text-dark); }
-
-        .btn-action {
-            width: 100%; padding: 16px; border: none; border-radius: var(--radius-md);
-            font-size: 1rem; font-weight: 800; cursor: pointer; transition: background 0.2s, transform 0.1s;
-            display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .btn-action:active { transform: scale(0.98); }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; }
-        
-        .feedback-toast {
-            margin-top: 12px; padding: 12px; border-radius: var(--radius-md); font-size: 0.85rem;
-            font-weight: 700; text-align: center; display: none;
-        }
-        .toast-success { background: var(--success-light); color: #047857; display: block; }
-        .toast-error { background: #fef2f2; color: #b91c1c; display: block; }
-
-        /* History Cards (Mobile Card View) */
-        .history-list { display: flex; flex-direction: column; gap: 12px; }
-        .history-item {
-            background: var(--surface); padding: 16px; border-radius: var(--radius-md);
-            border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex;
-            flex-direction: column; gap: 8px; position: relative;
-        }
-        .item-top { display: flex; justify-content: space-between; align-items: flex-start; }
-        .item-concept { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); line-height: 1.3; }
-        .item-date { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
-        
-        .item-amounts { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
-        .monto-orig { font-size: 0.8rem; color: var(--text-muted); }
-        .monto-pend { font-size: 1.05rem; font-weight: 800; color: var(--text-dark); }
-        
-        .item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-        .clave-tag { font-family: monospace; font-size: 0.78rem; background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
-        
-        /* Badges */
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
-        .badge-pendiente { background: var(--warning-light); color: #b45309; }
-        .badge-abonado { background: #ffedd5; color: #c2410c; }
-        .badge-pagado { background: var(--success-light); color: #047857; }
-
-        .progress-bar { background: #e2e8f0; height: 5px; border-radius: 3px; width: 100%; overflow: hidden; margin-top: 4px; }
-        .progress-fill { background: var(--success); height: 100%; }
-
-        .history-log { font-size: 0.72rem; color: var(--text-muted); background: #f8fafc; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
-    </style>
+  <style>
+    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card { border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; }
+    .header-title { color: #2c3e50; font-weight: 700; }
+    .badge-Pagado { background-color: #198754; }
+    .badge-Parcial { background-color: #fd7e14; }
+    .badge-Pendiente { background-color: #dc3545; }
+    .table-container { max-height: 500px; overflow-y: auto; }
+  </style>
 </head>
 <body>
 
-<div class="mobile-shell" id="reportArea">
+<div class="container py-4">
+  <h2 class="text-center mb-4 header-title">🌿 Quinta Bugambilia - Finanzas</h2>
 
-    <!-- Encabezado -->
-    <div class="app-header">
-        <div>
-            <h1>Control Reembolsos</h1>
-            <p>Panel Móvil de Gastos</p>
+  <div class="row g-4 mb-4">
+    <!-- Formulario de Gastos -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-primary text-white font-weight-bold rounded-top">
+          📤 Registrar Nuevo Gasto
         </div>
-        <button class="btn-icon-capture" id="btnExportImage" data-html2canvas-ignore="true">
-            📸 Reporte
-        </button>
+        <div class="card-body">
+          <form id="formGasto">
+            <div class="mb-3">
+              <label class="form-label">Fecha del Gasto</label>
+              <input type="date" class="form-control" id="fechaGasto" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Concepto (¿En qué se gastó?)</label>
+              <input type="text" class="form-control" id="conceptoGasto" placeholder="Ej. Cloro para alberca, Pintura..." required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Monto Pagado ($)</label>
+              <input type="number" step="0.01" class="form-control" id="montoGasto" placeholder="0.00" required>
+            </div>
+            <button type="button" class="btn btn-primary w-100" onclick="guardarGasto()">Guardar Gasto</button>
+          </form>
+        </div>
+      </div>
     </div>
 
-    <!-- Indicadores Táctiles Carrusel -->
-    <div class="stats-container">
-        <div class="stat-card">
-            <span class="label">Pendiente</span>
-            <span class="value val-pending" id="statPendiente">$0.00</span>
+    <!-- Formulario de Reembolsos -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-success text-white font-weight-bold rounded-top">
+          📥 Registrar Reembolso / Abono
         </div>
-        <div class="stat-card">
-            <span class="label">Reembolsado</span>
-            <span class="value val-success" id="statPagado">$0.00</span>
+        <div class="card-body">
+          <form id="formReembolso">
+            <div class="mb-3">
+              <label class="form-label">Fecha del Reembolso</label>
+              <input type="date" class="form-control" id="fechaReembolso" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Monto Depositado ($)</label>
+              <input type="number" step="0.01" class="form-control" id="montoReembolso" placeholder="0.00" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notas o Referencia</label>
+              <input type="text" class="form-control" id="notasReembolso" placeholder="Ej. Transferencia Banorte">
+            </div>
+            <button type="button" class="btn btn-success w-100" onclick="procesarReembolso()">Aplicar a Deudas</button>
+          </form>
         </div>
-        <div class="stat-card">
-            <span class="label">Total Gastos</span>
-            <span class="value val-total" id="statTotal">$0.00</span>
-        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Pestaña 1: Captura de Gasto -->
-    <div id="tabGasto" class="tab-panel active">
-        <div class="form-card">
-            <div class="form-card-title">📌 Capturar Nuevo Gasto</div>
-            <form id="formGasto">
-                <div class="field-group">
-                    <label>Fecha del Gasto</label>
-                    <input type="date" id="fecha" required>
-                </div>
-                <div class="field-group">
-                    <label>Monto Total ($)</label>
-                    <input type="number" step="0.01" id="monto" placeholder="0.00" inputmode="decimal" required>
-                </div>
-                <div class="field-group">
-                    <label>Concepto / Descripción</label>
-                    <textarea id="concepto" rows="2" placeholder="Ej. Gasolina, insumos evento..." required></textarea>
-                </div>
-                <button type="submit" class="btn-action btn-primary" id="btnGasto">Guardar Gasto</button>
-            </form>
-            <div id="msgGasto" class="feedback-toast"></div>
-        </div>
+  <!-- Tabla Histórica -->
+  <div class="card">
+    <div class="card-header bg-dark text-white font-weight-bold rounded-top">
+      📊 Historial y Estatus de Gastos
     </div>
-
-    <!-- Pestaña 2: Aplicar Reembolso / Abono -->
-    <div id="tabReembolso" class="tab-panel">
-        <div class="form-card">
-            <div class="form-card-title">💵 Aplicar Reembolso / Abono</div>
-            <form id="formReembolso">
-                <div class="field-group">
-                    <label>Monto Depositado ($)</label>
-                    <input type="number" step="0.01" id="monto_reembolso" placeholder="0.00" inputmode="decimal" required>
-                </div>
-                <div class="field-group">
-                    <label>Siguiente Clave Afectada</label>
-                    <input type="text" id="siguienteClave" readonly>
-                </div>
-                <button type="submit" class="btn-action btn-success" id="btnReembolso">Aplicar Reembolso en Cascada</button>
-            </form>
-            <div id="msgReembolso" class="feedback-toast"></div>
-        </div>
+    <div class="card-body p-0 table-container">
+      <table class="table table-hover table-striped mb-0 text-center">
+        <thead class="table-light sticky-top">
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Costo Original</th>
+            <th>Abonado</th>
+            <th>Saldo Pendiente</th>
+            <th>Estatus</th>
+          </tr>
+        </thead>
+        <tbody id="tablaGastos">
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">Cargando datos...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <!-- Pestaña 3: Historial de Gastos (Optimizado Móvil) -->
-    <div id="tabHistorial" class="tab-panel">
-        <div class="form-card-title" style="margin-bottom: 12px;">📜 Historial de Registros</div>
-        <div class="history-list" id="listaHistorial">
-            <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px;">Cargando registros...</p>
-        </div>
-    </div>
-
+  </div>
 </div>
 
-<!-- Navegación Móvil Inferior -->
-<nav class="bottom-nav" data-html2canvas-ignore="true">
-    <button class="nav-item active" onclick="switchTab('tabGasto', this)">
-        <span class="icon">➕</span>
-        <span>Gasto</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('tabReembolso', this)">
-        <span class="icon">💰</span>
-        <span>Abonar</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('tabHistorial', this)">
-        <span class="icon">📑</span>
-        <span>Historial</span>
-    </button>
-</nav>
-
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxoVq3QKgy369RNBLUa8sBSADRNtjWXMtp-nciPoF_ErmIdcStr1F9nNjny78ZnDi4t/exec';
+  // Al cargar la página, ponemos la fecha de hoy por defecto y cargamos la tabla
+  document.addEventListener('DOMContentLoaded', function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaGasto').value = hoy;
+    document.getElementById('fechaReembolso').value = hoy;
+    cargarTabla();
+  });
 
-    document.getElementById('fecha').valueAsDate = new Date();
-    cargarDashboard();
+  function cargarTabla() {
+    google.script.run
+      .withSuccessHandler(mostrarDatosEnTabla)
+      .withFailureHandler(mostrarError)
+      .obtenerGastos();
+  }
 
-    // Cambiar de Pestaña Móvil
-    function switchTab(tabId, element) {
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  function mostrarDatosEnTabla(gastos) {
+    const tbody = document.getElementById('tablaGastos');
+    tbody.innerHTML = ''; // Limpiamos
+
+    if (gastos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay gastos registrados aún.</td></tr>';
+      return;
+    }
+
+    // Recorremos los gastos (invertimos el array para ver los más nuevos arriba)
+    let html = '';
+    gastos.reverse().forEach(fila => {
+      // fila = [ID, Fecha, Concepto, Monto, Abonado, Saldo, Estatus]
+      const fecha = new Date(fila[1]).toLocaleDateString('es-MX');
+      const estatus = fila[6];
+      const badgeClass = 'badge-' + estatus; // Conecta con el CSS arriba
+
+      html += `
+        <tr>
+          <td>${fecha}</td>
+          <td class="text-start">${fila[2]}</td>
+          <td>$${parseFloat(fila[3]).toFixed(2)}</td>
+          <td>$${parseFloat(fila[4]).toFixed(2)}</td>
+          <td class="text-danger fw-bold">$${parseFloat(fila[5]).toFixed(2)}</td>
+          <td><span class="badge ${badgeClass}">${estatus}</span></td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function guardarGasto() {
+    const fecha = document.getElementById('fechaGasto').value;
+    const concepto = document.getElementById('conceptoGasto').value;
+    const monto = document.getElementById('montoGasto').value;
+
+    if (!fecha || !concepto || !monto) {
+      Swal.fire('Atención', 'Por favor llena todos los campos del gasto.', 'warning');
+      return;
+    }
+
+    Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+
+    google.script.run
+      .withSuccessHandler(() => {
+        document.getElementById('conceptoGasto').value = '';
+        document.getElementById('montoGasto').value = '';
+        Swal.fire('¡Éxito!', 'Gasto registrado correctamente.', 'success');
+        cargarTabla();
+      })
+      .withFailureHandler(mostrarError)
+      .registrarGasto(fecha, concepto, monto);
+  }
+
+  function procesarReembolso() {
+    const fecha = document.getElementById('fechaReembolso').value;
+    const monto = document.getElementById('montoReembolso').value;
+    const notas = document.getElementById('notasReembolso').value;
+
+    if (!fecha || !monto) {
+      Swal.fire('Atención', 'Indica la fecha y el monto del reembolso.', 'warning');
+      return;
+    }
+
+    Swal.fire({ title: 'Calculando abonos en cascada...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+
+    google.script.run
+      .withSuccessHandler((saldoRestante) => {
+        document.getElementById('montoReembolso').value = '';
+        document.getElementById('notasReembolso').value = '';
         
-        document.getElementById(tabId).classList.add('active');
-        element.classList.add('active');
-    }
-
-    function cargarDashboard() {
-        fetch(scriptURL)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('statPendiente').textContent = '$' + data.resumen.totalPendiente.toLocaleString('es-MX', {minimumFractionDigits: 2});
-                document.getElementById('statPagado').textContent = '$' + data.resumen.totalPagado.toLocaleString('es-MX', {minimumFractionDigits: 2});
-                document.getElementById('statTotal').textContent = '$' + data.resumen.totalOriginal.toLocaleString('es-MX', {minimumFractionDigits: 2});
-                document.getElementById('siguienteClave').value = data.siguienteClave;
-
-                renderHistorialMovil(data.registros);
-            })
-            .catch(err => console.error("Error al cargar datos:", err));
-    }
-
-    function renderHistorialMovil(registros) {
-        const contenedor = document.getElementById('listaHistorial');
-        contenedor.innerHTML = '';
-
-        if (!registros || registros.length === 0) {
-            contenedor.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 20px;">No hay registros actuales.</p>';
-            return;
+        if (saldoRestante > 0) {
+          Swal.fire('¡Abonos Aplicados!', `Se liquidaron las deudas posibles. Quedó un saldo a favor (sobrante del reembolso) de: $${saldoRestante.toFixed(2)}`, 'info');
+        } else {
+          Swal.fire('¡Abonos Aplicados!', 'El reembolso se distribuyó en tus gastos más antiguos exitosamente.', 'success');
         }
+        
+        cargarTabla();
+      })
+      .withFailureHandler(mostrarError)
+      .registrarReembolso(fecha, monto, notas);
+  }
 
-        registros.slice().reverse().forEach(r => {
-            const card = document.createElement('div');
-            card.className = 'history-item';
-
-            let badgeClass = 'badge-pendiente';
-            if (r.status === 'Pagado') badgeClass = 'badge-pagado';
-            if (r.status === 'Abonado') badgeClass = 'badge-abonado';
-
-            const pagado = r.monto_original - r.monto_pendiente;
-            const pct = Math.min(100, Math.max(0, (pagado / r.monto_original) * 100));
-
-            card.innerHTML = `
-                <div class="item-top">
-                    <div>
-                        <div class="item-concept">${r.concepto}</div>
-                        <div class="item-date">📅 ${r.fecha}</div>
-                    </div>
-                    <span class="badge ${badgeClass}">${r.status}</span>
-                </div>
-                
-                <div class="item-amounts">
-                    <span class="monto-orig">Original: $${r.monto_original.toFixed(2)}</span>
-                    <span class="monto-pend">Resta: $${r.monto_pendiente.toFixed(2)}</span>
-                </div>
-                
-                ${r.status === 'Abonado' ? `
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${pct}%"></div>
-                    </div>
-                ` : ''}
-
-                <div class="item-bottom">
-                    <span class="clave-tag">${r.clave_reembolso || 'Sin Clave'}</span>
-                </div>
-
-                ${r.historial_abonos ? `<div class="history-log">ℹ️ ${r.historial_abonos}</div>` : ''}
-            `;
-            contenedor.appendChild(card);
-        });
-    }
-
-    // Guardar Gasto
-    document.getElementById('formGasto').addEventListener('submit', e => {
-        e.preventDefault();
-        const btn = document.getElementById('btnGasto');
-        const msg = document.getElementById('msgGasto');
-        btn.disabled = true;
-
-        fetch(scriptURL, {
-            method: 'POST',
-            body: JSON.stringify({
-                accion: "nuevo_gasto",
-                fecha: document.getElementById('fecha').value,
-                monto: document.getElementById('monto').value,
-                concepto: document.getElementById('concepto').value
-            })
-        })
-        .then(res => res.json())
-        .then(res => {
-            msg.className = 'feedback-toast toast-success';
-            msg.textContent = res.message;
-            document.getElementById('formGasto').reset();
-            document.getElementById('fecha').valueAsDate = new Date();
-            btn.disabled = false;
-            cargarDashboard();
-        })
-        .catch(() => {
-            msg.className = 'feedback-toast toast-error';
-            msg.textContent = 'Error al registrar el gasto.';
-            btn.disabled = false;
-        });
-    });
-
-    // Guardar Reembolso
-    document.getElementById('formReembolso').addEventListener('submit', e => {
-        e.preventDefault();
-        const btn = document.getElementById('btnReembolso');
-        const msg = document.getElementById('msgReembolso');
-        btn.disabled = true;
-
-        fetch(scriptURL, {
-            method: 'POST',
-            body: JSON.stringify({
-                accion: "aplicar_reembolso",
-                monto_reembolso: document.getElementById('monto_reembolso').value
-            })
-        })
-        .then(res => res.json())
-        .then(res => {
-            msg.className = res.result === 'success' ? 'feedback-toast toast-success' : 'feedback-toast toast-error';
-            msg.textContent = res.message;
-            document.getElementById('formReembolso').reset();
-            btn.disabled = false;
-            cargarDashboard();
-        })
-        .catch(() => {
-            msg.className = 'feedback-toast toast-error';
-            msg.textContent = 'Error al procesar el abono.';
-            btn.disabled = false;
-        });
-    });
-
-    // Descarga de Reporte Imagen Móvil
-    document.getElementById('btnExportImage').addEventListener('click', () => {
-        const btn = document.getElementById('btnExportImage');
-        btn.textContent = '⏳...';
-        btn.disabled = true;
-
-        // Asegurarse de mostrar el historial en la captura
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
-
-        html2canvas(document.getElementById('reportArea'), {
-            scale: 2,
-            backgroundColor: '#f1f5f9',
-            useCORS: true
-        }).then(canvas => {
-            const link = document.createElement('a');
-            const fecha = new Date().toISOString().split('T')[0];
-            link.download = `Reporte_${fecha}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-
-            btn.textContent = '📸 Reporte';
-            btn.disabled = false;
-            
-            // Volver al estado normal de pestaña
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.getElementById('tabGasto').classList.add('active');
-        }).catch(err => {
-            btn.textContent = '📸 Reporte';
-            btn.disabled = false;
-        });
-    });
+  function mostrarError(err) {
+    Swal.fire('Error del sistema', err.message, 'error');
+  }
 </script>
 
 </body>
