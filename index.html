@@ -3,155 +3,506 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Control de Gastos - Quinta Bugambilia</title>
+  <!-- Meta Viewport Optimizado para iOS sin Zoom molesto -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
-  <!-- CSS de Bootstrap 5 -->
+  <!-- Modo Web App para iOS (Pantalla Completa al guardar en Pantalla de Inicio) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Q. Bugambilia">
+  <meta name="theme-color" content="#f2f2f7">
+
+  <title>Control Financiero - Quinta Bugambilia</title>
+  
+  <!-- CSS Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- SweetAlert2 para notificaciones -->
+  <!-- FontAwesome Iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .card { border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; }
-    .header-title { color: #2c3e50; font-weight: 700; }
-    .badge-Pagado { background-color: #198754; }
-    .badge-Parcial { background-color: #fd7e14; }
-    .badge-Pendiente { background-color: #dc3545; }
-    .table-container { max-height: 500px; overflow-y: auto; }
+    :root {
+      --ios-bg: #f2f2f7;
+      --ios-card-bg: #ffffff;
+      --ios-primary: #007aff;
+      --ios-success: #34c759;
+      --ios-danger: #ff3b30;
+      --ios-warning: #ff9500;
+      --ios-gray: #8e8e93;
+    }
+
+    body { 
+      background-color: var(--ios-bg); 
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      padding-top: max(15px, env(safe-area-inset-top));
+      padding-bottom: max(30px, env(safe-area-inset-bottom));
+    }
+
+    /* Evita el Zoom automático de Safari al tocar inputs */
+    input, select, textarea, button {
+      font-size: 16px !important; 
+    }
+
+    /* Tarjetas Estilo iOS */
+    .card-ios { 
+      background: var(--ios-card-bg);
+      border-radius: 18px; 
+      border: none; 
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    /* Header e Indicadores */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    
+    .kpi-box {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .kpi-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--ios-gray);
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .kpi-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    /* Segmented Control (Pestañas estilo iOS para móvil) */
+    .segmented-control {
+      background: #e3e3e8;
+      padding: 3px;
+      border-radius: 10px;
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .segmented-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      color: #000;
+      transition: all 0.2s ease;
+    }
+
+    .segmented-btn.active {
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    /* Botones y Touch Feedback */
+    .btn-ios {
+      border-radius: 12px;
+      font-weight: 600;
+      padding: 12px;
+      border: none;
+      transition: transform 0.1s ease, opacity 0.2s ease;
+    }
+
+    .btn-ios:active {
+      transform: scale(0.98);
+      opacity: 0.85;
+    }
+
+    .btn-ios-primary { background-color: var(--ios-primary); color: #fff; }
+    .btn-ios-success { background-color: var(--ios-success); color: #fff; }
+
+    /* Inputs estilo iOS */
+    .form-control, .form-select {
+      border-radius: 10px;
+      border: 1px solid #d1d1d6;
+      background-color: #f2f2f7;
+      padding: 10px 12px;
+    }
+
+    .form-control:focus, .form-select:focus {
+      background-color: #fff;
+      border-color: var(--ios-primary);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+    }
+
+    /* Badges estilo iOS Pill */
+    .badge-ios {
+      border-radius: 50px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-Pagado { background-color: #d1e7dd; color: #0f5132; }
+    .badge-Parcial { background-color: #fff3cd; color: #664d03; }
+    .badge-Pendiente { background-color: #f8d7da; color: #842029; }
+
+    /* Botones de Filtro Multiselección */
+    .btn-filter {
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .btn-filter.inactive {
+      background-color: #e5e5ea !important;
+      color: #8e8e93 !important;
+      border-color: #d1d1d6 !important;
+      opacity: 0.55;
+    }
+
+    /* Contenedor de Tabla Táctil */
+    .table-container {
+      max-height: 480px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .table thead th {
+      background-color: #f8f8fc;
+      color: var(--ios-gray);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      border-bottom: 1px solid #e5e5ea;
+    }
+
+    /* Vista de Tarjeta en Pantallas Pequeñas */
+    @media (max-width: 576px) {
+      .hide-mobile { display: none !important; }
+      .app-title { font-size: 1.35rem; }
+      .kpi-value { font-size: 1.1rem; }
+    }
   </style>
 </head>
 <body>
 
-<div class="container py-4">
-  <h2 class="text-center mb-4 header-title">🌿 Quinta Bugambilia - Finanzas</h2>
+<div class="container px-3">
+  
+  <!-- CABECERA PRINCIPAL -->
+  <div class="app-header">
+    <div>
+      <h3 class="fw-bold mb-0 app-title"><i class="fa-solid fa-leaf text-success me-1"></i> Quinta Bugambilia</h3>
+      <span class="text-muted small">Control de Gastos & Reembolsos</span>
+    </div>
+    <button class="btn btn-light btn-sm rounded-circle shadow-sm" onclick="cargarTabla()" title="Actualizar">
+      <i class="fa-solid fa-rotate-right text-secondary"></i>
+    </button>
+  </div>
 
-  <div class="row g-4 mb-4">
-    <!-- Formulario de Gastos -->
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-header bg-primary text-white font-weight-bold rounded-top">
-          📤 Registrar Nuevo Gasto
-        </div>
-        <div class="card-body">
-          <form id="formGasto">
-            <div class="mb-3">
-              <label class="form-label">Fecha del Gasto</label>
-              <input type="date" class="form-control" id="fechaGasto" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Concepto (¿En qué se gastó?)</label>
-              <input type="text" class="form-control" id="conceptoGasto" placeholder="Ej. Cloro para alberca, Pintura..." required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Monto Pagado ($)</label>
-              <input type="number" step="0.01" class="form-control" id="montoGasto" placeholder="0.00" required>
-            </div>
-            <button type="button" class="btn btn-primary w-100" onclick="guardarGasto()">Guardar Gasto</button>
-          </form>
-        </div>
+  <!-- TARJETAS RESUMEN (KPIs) -->
+  <div class="row g-2 mb-3">
+    <div class="col-4">
+      <div class="kpi-box text-center">
+        <div class="kpi-title">Gastado</div>
+        <div class="kpi-value text-dark" id="kpiGastado">$0</div>
       </div>
     </div>
-
-    <!-- Formulario de Reembolsos -->
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-header bg-success text-white font-weight-bold rounded-top">
-          📥 Registrar Reembolso / Abono
-        </div>
-        <div class="card-body">
-          <form id="formReembolso">
-            <div class="mb-3">
-              <label class="form-label">Fecha del Reembolso</label>
-              <input type="date" class="form-control" id="fechaReembolso" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Monto Depositado ($)</label>
-              <input type="number" step="0.01" class="form-control" id="montoReembolso" placeholder="0.00" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Notas o Referencia</label>
-              <input type="text" class="form-control" id="notasReembolso" placeholder="Ej. Transferencia Banorte">
-            </div>
-            <button type="button" class="btn btn-success w-100" onclick="procesarReembolso()">Aplicar a Deudas</button>
-          </form>
-        </div>
+    <div class="col-4">
+      <div class="kpi-box text-center">
+        <div class="kpi-title">Reembolso</div>
+        <div class="kpi-value text-success" id="kpiAbonado">$0</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="kpi-box text-center">
+        <div class="kpi-title">Deuda</div>
+        <div class="kpi-value text-danger" id="kpiPendiente">$0</div>
       </div>
     </div>
   </div>
 
-  <!-- Tabla Histórica -->
-  <div class="card">
-    <div class="card-header bg-dark text-white font-weight-bold rounded-top">
-      📊 Historial y Estatus de Gastos
-    </div>
-    <div class="card-body p-0 table-container">
-      <table class="table table-hover table-striped mb-0 text-center">
-        <thead class="table-light sticky-top">
-          <tr>
-            <th>Fecha</th>
-            <th>Concepto</th>
-            <th>Costo Original</th>
-            <th>Abonado</th>
-            <th>Saldo Pendiente</th>
-            <th>Estatus</th>
-          </tr>
-        </thead>
-        <tbody id="tablaGastos">
-          <tr>
-            <td colspan="6" class="text-center text-muted py-4">Cargando datos...</td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- SELECTOR PESTAÑAS (SEGMENTED CONTROL EN MÓVIL) -->
+  <div class="segmented-control" id="segmentedControl">
+    <button class="segmented-btn active" onclick="cambiarVista('gasto', this)">
+      <i class="fa-solid fa-arrow-up-right-dots me-1"></i> Gasto
+    </button>
+    <button class="segmented-btn" onclick="cambiarVista('reembolso', this)">
+      <i class="fa-solid fa-money-bill-transfer me-1"></i> Reembolso
+    </button>
+    <button class="segmented-btn" onclick="cambiarVista('historial', this)">
+      <i class="fa-solid fa-list-check me-1"></i> Historial
+    </button>
+  </div>
+
+  <!-- SECCIÓN 1: FORMULARIO GASTO -->
+  <div id="vistaGasto" class="vista-seccion">
+    <div class="card-ios p-3">
+      <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-plus-circle me-1"></i> Registrar Nuevo Gasto</h6>
+      <form id="formGasto">
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label small text-muted mb-1">Fecha</label>
+            <input type="date" class="form-control" id="fechaGasto" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small text-muted mb-1">Monto ($)</label>
+            <input type="number" step="0.01" class="form-control" id="montoGasto" placeholder="0.00" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted mb-1">Concepto</label>
+          <input type="text" class="form-control" id="conceptoGasto" placeholder="Ej. Cloro para alberca..." required>
+        </div>
+        <button type="button" class="btn btn-ios btn-ios-primary w-100" onclick="guardarGasto()">
+          <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Gasto
+        </button>
+      </form>
     </div>
   </div>
+
+  <!-- SECCIÓN 2: FORMULARIO REEMBOLSO -->
+  <div id="vistaReembolso" class="vista-seccion" style="display: none;">
+    <div class="card-ios p-3">
+      <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-hand-holding-dollar me-1"></i> Recibir Reembolso / Abono</h6>
+      <form id="formReembolso">
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label small text-muted mb-1">Fecha</label>
+            <input type="date" class="form-control" id="fechaReembolso" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small text-muted mb-1">Depositado ($)</label>
+            <input type="number" step="0.01" class="form-control" id="montoReembolso" placeholder="0.00" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted mb-1">Notas / Referencia</label>
+          <input type="text" class="form-control" id="notasReembolso" placeholder="Ej. Transferencia Banorte">
+        </div>
+        <button type="button" class="btn btn-ios btn-ios-success w-100" onclick="procesarReembolso()">
+          <i class="fa-solid fa-check-double me-1"></i> Aplicar a Deudas
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 3: TABLA E HISTORIAL -->
+  <div id="vistaHistorial" class="vista-seccion">
+    <div class="card-ios">
+      <!-- Filtros Multiselección Táctiles -->
+      <div class="p-3 border-bottom bg-white">
+        <div class="row g-2 align-items-center mb-2">
+          <div class="col-10">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text border-0 bg-light"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" class="form-control border-0 bg-light" id="searchConcepto" placeholder="Buscar concepto..." onkeyup="aplicarFiltros()">
+            </div>
+          </div>
+          <div class="col-2 text-end">
+            <button class="btn btn-sm btn-dark w-100 rounded-3" onclick="exportarCSV()" title="Descargar CSV">
+              <i class="fa-solid fa-download"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botones Toggle para Multiselección de Estatus -->
+        <div class="d-flex gap-1 overflow-auto py-1">
+          <button type="button" class="btn btn-filter badge-Pendiente" id="btnFiltroPendiente" onclick="toggleEstatus('Pendiente', this)">
+            <i class="fa-solid fa-circle me-1" style="font-size: 8px;"></i>Pendientes
+          </button>
+          <button type="button" class="btn btn-filter badge-Parcial" id="btnFiltroParcial" onclick="toggleEstatus('Parcial', this)">
+            <i class="fa-solid fa-circle me-1" style="font-size: 8px;"></i>Parciales
+          </button>
+          <button type="button" class="btn btn-filter badge-Pagado inactive" id="btnFiltroPagado" onclick="toggleEstatus('Pagado', this)">
+            <i class="fa-solid fa-circle me-1" style="font-size: 8px;"></i>Pagados
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla Adaptable -->
+      <div class="table-container">
+        <table class="table table-hover align-middle mb-0 text-center">
+          <thead>
+            <tr>
+              <th class="text-start">Concepto / Fecha</th>
+              <th>Costo</th>
+              <th class="hide-mobile">Abonado</th>
+              <th>Pendiente</th>
+              <th>Estatus</th>
+            </tr>
+          </thead>
+          <tbody id="tablaGastos">
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">
+                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                <div class="small">Cargando datos...</div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot id="tablaTotales" style="display: none;">
+            <tr class="table-light fw-bold">
+              <td class="text-start py-3">TOTAL:</td>
+              <td id="totalCosto" class="py-3">$0</td>
+              <td id="totalAbonado" class="text-success py-3 hide-mobile">$0</td>
+              <td id="totalPendiente" class="text-danger py-3">$0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-  // Al cargar la página, ponemos la fecha de hoy por defecto y cargamos la tabla
+  const API_URL = "https://script.google.com/macros/s/AKfycbz-IgvNztN2FAmFc13XDjqtu-fRxNnOihXTWlTDfSqBVIepK8FpiommOCU6YOU9gUBB/exec";
+  let datosGlobales = [];
+
+  // Estado predeterminado: Solo Pendiente y Parcial activos
+  let estatusSeleccionados = new Set(['Pendiente', 'Parcial']);
+
   document.addEventListener('DOMContentLoaded', function() {
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('fechaGasto').value = hoy;
     document.getElementById('fechaReembolso').value = hoy;
     cargarTabla();
+    ajustarVistasMovil();
   });
 
+  // Función para alternar/togglear un estatus en los filtros
+  function toggleEstatus(estatus, btn) {
+    if (estatusSeleccionados.has(estatus)) {
+      estatusSeleccionados.delete(estatus);
+      btn.classList.add('inactive');
+    } else {
+      estatusSeleccionados.add(estatus);
+      btn.classList.remove('inactive');
+    }
+    aplicarFiltros();
+  }
+
+  function cambiarVista(vista, btn) {
+    document.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    if (window.innerWidth < 768) {
+      document.getElementById('vistaGasto').style.display = (vista === 'gasto') ? 'block' : 'none';
+      document.getElementById('vistaReembolso').style.display = (vista === 'reembolso') ? 'block' : 'none';
+      document.getElementById('vistaHistorial').style.display = (vista === 'historial') ? 'block' : 'none';
+    }
+  }
+
+  function ajustarVistasMovil() {
+    if (window.innerWidth >= 768) {
+      document.getElementById('vistaGasto').style.display = 'block';
+      document.getElementById('vistaReembolso').style.display = 'block';
+      document.getElementById('vistaHistorial').style.display = 'block';
+      document.getElementById('segmentedControl').style.display = 'none';
+    }
+  }
+
+  window.addEventListener('resize', ajustarVistasMovil);
+
   function cargarTabla() {
-    google.script.run
-      .withSuccessHandler(mostrarDatosEnTabla)
-      .withFailureHandler(mostrarError)
-      .obtenerGastos();
+    fetch(API_URL + "?action=obtenerGastos")
+      .then(res => res.json())
+      .then(response => {
+        if(response.status === 'success') {
+          datosGlobales = response.data.reverse(); 
+          actualizarKPIs(datosGlobales);
+          aplicarFiltros(); 
+        } else {
+          Swal.fire('Error', response.message, 'error');
+        }
+      })
+      .catch(err => Swal.fire('Error', 'Falla de conexión: ' + err.message, 'error'));
+  }
+
+  function actualizarKPIs(gastos) {
+    let tGastado = 0, tAbonado = 0, tPendiente = 0;
+    
+    gastos.forEach(fila => {
+      tGastado += parseFloat(fila[3]) || 0;
+      tAbonado += parseFloat(fila[4]) || 0;
+      tPendiente += parseFloat(fila[5]) || 0;
+    });
+
+    document.getElementById('kpiGastado').innerText = formatoMoneda(tGastado);
+    document.getElementById('kpiAbonado').innerText = formatoMoneda(tAbonado);
+    document.getElementById('kpiPendiente').innerText = formatoMoneda(tPendiente);
+  }
+
+  function aplicarFiltros() {
+    const textoBuscado = document.getElementById('searchConcepto').value.toLowerCase();
+
+    const datosFiltrados = datosGlobales.filter(fila => {
+      const coincideTexto = fila[2].toLowerCase().includes(textoBuscado);
+      const estatusFila = fila[6];
+      const coincideEstatus = estatusSeleccionados.has(estatusFila);
+      return coincideTexto && coincideEstatus;
+    });
+
+    mostrarDatosEnTabla(datosFiltrados);
   }
 
   function mostrarDatosEnTabla(gastos) {
     const tbody = document.getElementById('tablaGastos');
-    tbody.innerHTML = ''; // Limpiamos
+    const tfoot = document.getElementById('tablaTotales');
+    tbody.innerHTML = ''; 
 
     if (gastos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay gastos registrados aún.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-folder-open fs-2 mb-1 d-block text-secondary"></i>Sin registros para los filtros seleccionados</td></tr>';
+      tfoot.style.display = 'none';
       return;
     }
 
-    // Recorremos los gastos (invertimos el array para ver los más nuevos arriba)
     let html = '';
-    gastos.reverse().forEach(fila => {
-      // fila = [ID, Fecha, Concepto, Monto, Abonado, Saldo, Estatus]
-      const fecha = new Date(fila[1]).toLocaleDateString('es-MX');
+    let sumaCosto = 0, sumaAbonado = 0, sumaPendiente = 0;
+
+    gastos.forEach(fila => {
+      const fecha = new Date(fila[1]).toLocaleDateString('es-MX', { timeZone: 'UTC', day: 'numeric', month: 'short' });
       const estatus = fila[6];
-      const badgeClass = 'badge-' + estatus; // Conecta con el CSS arriba
+      const badgeClass = 'badge-' + estatus; 
+      
+      sumaCosto += parseFloat(fila[3]) || 0;
+      sumaAbonado += parseFloat(fila[4]) || 0;
+      sumaPendiente += parseFloat(fila[5]) || 0;
 
       html += `
         <tr>
-          <td>${fecha}</td>
-          <td class="text-start">${fila[2]}</td>
-          <td>$${parseFloat(fila[3]).toFixed(2)}</td>
-          <td>$${parseFloat(fila[4]).toFixed(2)}</td>
-          <td class="text-danger fw-bold">$${parseFloat(fila[5]).toFixed(2)}</td>
-          <td><span class="badge ${badgeClass}">${estatus}</span></td>
+          <td class="text-start">
+            <div class="fw-bold text-dark text-truncate" style="max-width: 130px;">${fila[2]}</div>
+            <div class="text-muted small">${fecha}</div>
+          </td>
+          <td class="fw-semibold">${formatoMoneda(fila[3])}</td>
+          <td class="text-success hide-mobile">${formatoMoneda(fila[4])}</td>
+          <td class="text-danger fw-bold">${formatoMoneda(fila[5])}</td>
+          <td><span class="badge badge-ios ${badgeClass}">${estatus}</span></td>
         </tr>
       `;
     });
+    
     tbody.innerHTML = html;
+
+    document.getElementById('totalCosto').innerText = formatoMoneda(sumaCosto);
+    document.getElementById('totalAbonado').innerText = formatoMoneda(sumaAbonado);
+    document.getElementById('totalPendiente').innerText = formatoMoneda(sumaPendiente);
+    tfoot.style.display = 'table-footer-group';
   }
 
   function guardarGasto() {
@@ -159,22 +510,27 @@
     const concepto = document.getElementById('conceptoGasto').value;
     const monto = document.getElementById('montoGasto').value;
 
-    if (!fecha || !concepto || !monto) {
-      Swal.fire('Atención', 'Por favor llena todos los campos del gasto.', 'warning');
-      return;
-    }
+    if (!fecha || !concepto || !monto) return Swal.fire('Atención', 'Llena todos los campos.', 'warning');
 
     Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
 
-    google.script.run
-      .withSuccessHandler(() => {
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "registrarGasto", fecha, concepto, monto })
+    })
+    .then(res => res.json())
+    .then(response => {
+      if(response.status === 'success') {
         document.getElementById('conceptoGasto').value = '';
         document.getElementById('montoGasto').value = '';
-        Swal.fire('¡Éxito!', 'Gasto registrado correctamente.', 'success');
+        Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
         cargarTabla();
-      })
-      .withFailureHandler(mostrarError)
-      .registrarGasto(fecha, concepto, monto);
+      } else {
+        Swal.fire('Error', response.message, 'error');
+      }
+    })
+    .catch(err => Swal.fire('Error', 'No se pudo guardar: ' + err.message, 'error'));
   }
 
   function procesarReembolso() {
@@ -182,32 +538,59 @@
     const monto = document.getElementById('montoReembolso').value;
     const notas = document.getElementById('notasReembolso').value;
 
-    if (!fecha || !monto) {
-      Swal.fire('Atención', 'Indica la fecha y el monto del reembolso.', 'warning');
-      return;
-    }
+    if (!fecha || !monto) return Swal.fire('Atención', 'Indica fecha y monto.', 'warning');
 
-    Swal.fire({ title: 'Calculando abonos en cascada...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+    Swal.fire({ title: 'Abonando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
 
-    google.script.run
-      .withSuccessHandler((saldoRestante) => {
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "registrarReembolso", fecha, monto, notas })
+    })
+    .then(res => res.json())
+    .then(response => {
+      if(response.status === 'success') {
         document.getElementById('montoReembolso').value = '';
         document.getElementById('notasReembolso').value = '';
         
-        if (saldoRestante > 0) {
-          Swal.fire('¡Abonos Aplicados!', `Se liquidaron las deudas posibles. Quedó un saldo a favor (sobrante del reembolso) de: $${saldoRestante.toFixed(2)}`, 'info');
+        if (response.saldoRestante > 0) {
+          Swal.fire('¡Abonos Aplicados!', `Sobrante a favor: ${formatoMoneda(response.saldoRestante)}`, 'info');
         } else {
-          Swal.fire('¡Abonos Aplicados!', 'El reembolso se distribuyó en tus gastos más antiguos exitosamente.', 'success');
+          Swal.fire('¡Éxito!', 'Reembolso aplicado en cascada.', 'success');
         }
-        
         cargarTabla();
-      })
-      .withFailureHandler(mostrarError)
-      .registrarReembolso(fecha, monto, notas);
+      } else {
+        Swal.fire('Error', response.message, 'error');
+      }
+    })
+    .catch(err => Swal.fire('Error', 'No se pudo procesar: ' + err.message, 'error'));
   }
 
-  function mostrarError(err) {
-    Swal.fire('Error del sistema', err.message, 'error');
+  function exportarCSV() {
+    if (datosGlobales.length === 0) return Swal.fire('Atención', 'No hay datos para exportar.', 'warning');
+    
+    let csvContent = "Fecha,Concepto,Costo Original,Abonado,Saldo Pendiente,Estatus\n";
+    
+    // Exportamos únicamente las filas que coinciden con los filtros actuales
+    const datosFiltrados = datosGlobales.filter(fila => estatusSeleccionados.has(fila[6]));
+
+    datosFiltrados.forEach(fila => {
+      const fecha = new Date(fila[1]).toLocaleDateString('es-MX', { timeZone: 'UTC' });
+      csvContent += `"${fecha}","${fila[2]}","${fila[3]}","${fila[4]}","${fila[5]}","${fila[6]}"\n`;
+    });
+
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Reporte_Quinta_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function formatoMoneda(valor) {
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(valor || 0);
   }
 </script>
 
